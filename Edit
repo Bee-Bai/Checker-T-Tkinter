@@ -74,14 +74,22 @@ class ThaiCheckersApp:
     def is_valid_move(self, target_row, target_col):
         if (target_row + target_col) % 2 == 1:
             row_diff = target_row - self.selected_piece_position[0]
-            col_diff = abs(target_col - self.selected_piece_position[1])
+            col_diff = target_col - self.selected_piece_position[1]
 
-            if col_diff == 1 and ((self.current_turn == "red" and row_diff == 1) or (self.current_turn == "black" and row_diff == -1)):
+            if abs(col_diff) == 1 and ((self.current_turn == "red" and row_diff == 1) or (self.current_turn == "black" and row_diff == -1)):
                 if self.get_piece_position(target_row, target_col) is None:
                     return True
+            elif abs(col_diff) == 2 and abs(row_diff) == 2:
+                mid_row = (self.selected_piece_position[0] + target_row) // 2
+                mid_col = (self.selected_piece_position[1] + target_col) // 2
+                opponent_piece = self.get_piece_position(mid_row, mid_col)
+                if opponent_piece and self.canvas.itemcget(opponent_piece, "fill") != self.current_turn:
+                    if self.get_piece_position(target_row, target_col) is None:
+                        self.canvas.delete(opponent_piece)
+                        return True
         return False
 
-    def get_piece_position(self, row, col):
+    def get_piece_position(self, row, col): 
         items = self.canvas.find_overlapping(col * CELL_SIZE, row * CELL_SIZE,
                                              (col + 1) * CELL_SIZE, (row + 1) * CELL_SIZE)
         for item in items:
