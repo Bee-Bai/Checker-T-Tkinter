@@ -72,9 +72,13 @@ class ThaiCheckersApp:
             self.selected_piece_position = None
 
     def is_valid_move(self, target_row, target_col):
-        if (target_row + target_col) % 2 == 1:  
-            if self.get_piece_position(target_row, target_col) is None:
-                return True
+        if (target_row + target_col) % 2 == 1:
+            row_diff = target_row - self.selected_piece_position[0]
+            col_diff = abs(target_col - self.selected_piece_position[1])
+
+            if col_diff == 1 and ((self.current_turn == "red" and row_diff == 1) or (self.current_turn == "black" and row_diff == -1)):
+                if self.get_piece_position(target_row, target_col) is None:
+                    return True
         return False
 
     def get_piece_position(self, row, col):
