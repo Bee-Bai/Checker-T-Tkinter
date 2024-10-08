@@ -67,6 +67,7 @@ class ThaiCheckersApp:
         else:
             if self.is_valid_move(row, col):
                 self.move_piece(row, col)
+                self.check_for_king(row, col)  # Check if piece becomes a king
                 self.switch_turn()
             self.selected_piece = None
             self.selected_piece_position = None
@@ -89,7 +90,7 @@ class ThaiCheckersApp:
                         return True
         return False
 
-    def get_piece_position(self, row, col): 
+    def get_piece_position(self, row, col):
         items = self.canvas.find_overlapping(col * CELL_SIZE, row * CELL_SIZE,
                                              (col + 1) * CELL_SIZE, (row + 1) * CELL_SIZE)
         for item in items:
@@ -102,6 +103,14 @@ class ThaiCheckersApp:
         if piece:
             self.canvas.move(piece, (target_col - self.selected_piece_position[1]) * CELL_SIZE,
                              (target_row - self.selected_piece_position[0]) * CELL_SIZE)
+
+    def check_for_king(self, row, col):
+        """Check if the piece reaches the last row and becomes a king."""
+        piece = self.get_piece_position(row, col)
+        if self.current_turn == "red" and row == 7:
+            self.canvas.itemconfig(piece, fill="darkred")  # Red piece becomes a king (dark red)
+        elif self.current_turn == "black" and row == 0:
+            self.canvas.itemconfig(piece, fill="gray20")  # Darker gray for black king
 
     def switch_turn(self):
         self.current_turn = "black" if self.current_turn == "red" else "red"
