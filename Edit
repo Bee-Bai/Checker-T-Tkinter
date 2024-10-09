@@ -1,14 +1,14 @@
 import tkinter as tk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
+import json
 
 BOARD_SIZE = 8
 CELL_SIZE = 80
 
-
 class ThaiCheckersApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("หมากฮอสไทย")
+        self.root.title("Thai Checkers")
 
         self.canvas = tk.Canvas(root, width=BOARD_SIZE * CELL_SIZE, height=BOARD_SIZE * CELL_SIZE)
         self.canvas.pack()
@@ -25,6 +25,12 @@ class ThaiCheckersApp:
         self.selection_outline = None
 
         self.canvas.bind("<Button-1>", self.on_click)
+
+        self.save_button = tk.Button(root, text="Save Game", command=self.save_game)
+        self.save_button.pack(side=tk.LEFT, padx=10)
+
+        self.load_button = tk.Button(root, text="Load Game", command=self.load_game)
+        self.load_button.pack(side=tk.LEFT)
 
     def draw_board(self):
         for row in range(BOARD_SIZE):
@@ -52,7 +58,7 @@ class ThaiCheckersApp:
         x1 = col * CELL_SIZE + CELL_SIZE // 2
         y1 = row * CELL_SIZE + CELL_SIZE // 2
         radius = CELL_SIZE // 2 - 10
-        piece_id = self.canvas.create_oval(x1 - radius, y1 - radius, x1 + radius, y1 + radius, fill=color)
+        self.canvas.create_oval(x1 - radius, y1 - radius, x1 + radius, y1 + radius, fill=color)
 
     def on_click(self, event):
         col = event.x // CELL_SIZE
@@ -80,7 +86,6 @@ class ThaiCheckersApp:
                 self.move_piece(row, col)
                 self.check_for_king(row, col)
                 self.switch_turn()
-
                 self.check_game_over()
 
             self.selected_piece = None
@@ -88,11 +93,8 @@ class ThaiCheckersApp:
 
     def is_current_turn_piece(self, piece):
         piece_color = self.canvas.itemcget(piece, "fill")
-        if self.current_turn == "red" and piece_color in ["red", "darkred"]:
-            return True
-        elif self.current_turn == "black" and piece_color in ["black", "gray20"]:
-            return True
-        return False
+        return (self.current_turn == "red" and piece_color in ["red", "darkred"]) or \
+               (self.current_turn == "black" and piece_color in ["black", "gray20"])
 
     def is_valid_move(self, target_row, target_col):
         if (target_row + target_col) % 2 == 1:
@@ -105,8 +107,7 @@ class ThaiCheckersApp:
             if not is_king:
                 if abs(col_diff) == 1 and ((self.current_turn == "red" and row_diff == 1) or
                                            (self.current_turn == "black" and row_diff == -1)):
-                    if self.get_piece_position(target_row, target_col) is None:
-                        return True
+                    return self.get_piece_position(target_row, target_col) is None
 
             if is_king:
                 if abs(col_diff) == abs(row_diff):
@@ -147,8 +148,7 @@ class ThaiCheckersApp:
             mid_col = (self.selected_piece_position[1] + target_col) // 2
             opponent_piece = self.get_piece_position(mid_row, mid_col)
             if opponent_piece and self.canvas.itemcget(opponent_piece, "fill") != self.current_turn:
-                if (self.current_turn == "red" and row_diff == 2) or (self.current_turn == "black" and row_diff == -2):
-                    return True
+                return (self.current_turn == "red" and row_diff == 2) or (self.current_turn == "black" and row_diff == -2)
 
         return False
 
@@ -163,7 +163,6 @@ class ThaiCheckersApp:
     def move_piece(self, target_row, target_col):
         piece = self.selected_piece
         if piece:
-
             if abs(target_row - self.selected_piece_position[0]) == 2:
                 mid_row = (self.selected_piece_position[0] + target_row) // 2
                 mid_col = (self.selected_piece_position[1] + target_col) // 2
@@ -213,6 +212,41 @@ class ThaiCheckersApp:
         self.current_turn = "red"
         self.turn_label.config(text="Turn: Red")
 
+    def save_game(self):
+        game_state = {
+            "turn": self.current_turn,
+            "pieces": {}
+        }
+        for row in range(BOARD_SIZE):
+            for col in range(BOARD_SIZE):
+                piece = self.get_piece_position(row, col)
+                if piece:
+                    color = self.canvas.itemcget(piece, "fill")
+                    game_state["pieces"][f"{row},{col}"] = color
+
+        file_path = filedialog.asksaveasfilename(defaultextension=".json",
+                                                   filetypes=[("JSON files", "*.json"),
+                                                              ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'w') as f:
+                json.dump(game_state, f)
+
+    def load_game(self):
+        file_path = filedialog.askopenfilename(filetypes=[("JSON files", "*.json"),
+                                                           ("All files", "*.*")])
+        if file_path:
+            with open(file_path, 'r') as f:
+                game_state = json.load(f)
+
+            self.canvas.delete("all")
+            self.draw_board()
+
+            self.current_turn = game_state["turn"]
+            self.turn_label.config(text=f"Turn: {'Red' if self.current_turn == 'red' else 'Black'}")
+
+            for key, color in game_state["pieces"].items():
+                row, col = map(int, key.split(','))
+                self.create_piece(row, col, color)
 
 if __name__ == "__main__":
     root = tk.Tk()
