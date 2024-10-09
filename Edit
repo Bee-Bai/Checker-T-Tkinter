@@ -61,40 +61,67 @@ class ThaiCheckersApp:
         piece = self.get_piece_position(row, col)
 
         if self.selected_piece is None:
-            if piece and self.canvas.itemcget(piece, "fill") == self.current_turn:
+
+            if piece and self.is_current_turn_piece(piece):
                 self.selected_piece = piece
                 self.selected_piece_position = (row, col)
         else:
             if self.is_valid_move(row, col):
                 self.move_piece(row, col)
-                self.check_for_king(row, col)  # Check if piece becomes a king
+                self.check_for_king(row, col)
                 self.switch_turn()
             self.selected_piece = None
             self.selected_piece_position = None
+
+    def is_current_turn_piece(self, piece):
+        """Check if the piece belongs to the current player, including kings."""
+        piece_color = self.canvas.itemcget(piece, "fill")
+        if self.current_turn == "red" and piece_color in ["red", "darkred"]:
+            return True
+        elif self.current_turn == "black" and piece_color in ["black", "gray20"]:
+            return True
+        return False
 
     def is_valid_move(self, target_row, target_col):
         if (target_row + target_col) % 2 == 1:
             row_diff = target_row - self.selected_piece_position[0]
             col_diff = target_col - self.selected_piece_position[1]
+            
+            piece_color = self.canvas.itemcget(self.selected_piece, "fill")
+            is_king = piece_color in ["darkred", "gray20"]
 
-            if abs(col_diff) == 1 and ((self.current_turn == "red" and row_diff == 1) or (self.current_turn == "black" and row_diff == -1)):
-                if self.get_piece_position(target_row, target_col) is None:
-                    return True
-            elif abs(col_diff) == 2 and abs(row_diff) == 2:
+            if not is_king:
+                if abs(col_diff) == 1 and ((self.current_turn == "red" and row_diff == 1) or 
+                                           (self.current_turn == "black" and row_diff == -1)):
+                    if self.get_piece_position(target_row, target_col) is None:
+                        return True
+            else:
+                if abs(col_diff) == abs(row_diff):
+                    step_row = 1 if row_diff > 0 else -1
+                    step_col = 1 if col_diff > 0 else -1
+                    for i in range(1, abs(row_diff)):
+                        if self.get_piece_position(self.selected_piece_position[0] + i * step_row,
+                                                   self.selected_piece_position[1] + i * step_col) is not None:
+                            return False
+                    if self.get_piece_position(target_row, target_col) is None:
+                        return True
+
+            if abs(col_diff) == 2 and abs(row_diff) == 2:
                 mid_row = (self.selected_piece_position[0] + target_row) // 2
                 mid_col = (self.selected_piece_position[1] + target_col) // 2
                 opponent_piece = self.get_piece_position(mid_row, mid_col)
                 if opponent_piece and self.canvas.itemcget(opponent_piece, "fill") != self.current_turn:
                     if self.get_piece_position(target_row, target_col) is None:
-                        self.canvas.delete(opponent_piece)
-                        return True
+                        if (self.current_turn == "red" and row_diff == 2) or (self.current_turn == "black" and row_diff == -2):
+                            self.canvas.delete(opponent_piece)
+                            return True
         return False
 
     def get_piece_position(self, row, col):
         items = self.canvas.find_overlapping(col * CELL_SIZE, row * CELL_SIZE,
                                              (col + 1) * CELL_SIZE, (row + 1) * CELL_SIZE)
         for item in items:
-            if self.canvas.itemcget(item, "fill") in ("red", "black"):
+            if self.canvas.itemcget(item, "fill") in ("red", "black", "darkred", "gray20"):
                 return item
         return None
 
@@ -108,9 +135,9 @@ class ThaiCheckersApp:
         """Check if the piece reaches the last row and becomes a king."""
         piece = self.get_piece_position(row, col)
         if self.current_turn == "red" and row == 7:
-            self.canvas.itemconfig(piece, fill="darkred")  # Red piece becomes a king (dark red)
+            self.canvas.itemconfig(piece, fill="darkred")
         elif self.current_turn == "black" and row == 0:
-            self.canvas.itemconfig(piece, fill="gray20")  # Darker gray for black king
+            self.canvas.itemconfig(piece, fill="gray20")
 
     def switch_turn(self):
         self.current_turn = "black" if self.current_turn == "red" else "red"
@@ -119,4 +146,4 @@ class ThaiCheckersApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = ThaiCheckersApp(root)
-    root.mainloop()
+    root.mainloop() 
