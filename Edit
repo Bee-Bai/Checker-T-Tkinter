@@ -20,6 +20,7 @@ class ThaiCheckersApp:
         self.selected_piece = None
         self.selected_piece_position = None
         self.current_turn = "red"
+        self.selection_outline = None
 
         self.canvas.bind("<Button-1>", self.on_click)
 
@@ -60,11 +61,19 @@ class ThaiCheckersApp:
     def select_piece(self, row, col):
         piece = self.get_piece_position(row, col)
 
-        if self.selected_piece is None:
+        if self.selection_outline:
+            self.canvas.delete(self.selection_outline)
 
+        if self.selected_piece is None:
             if piece and self.is_current_turn_piece(piece):
                 self.selected_piece = piece
                 self.selected_piece_position = (row, col)
+
+                x1 = col * CELL_SIZE
+                y1 = row * CELL_SIZE
+                x2 = x1 + CELL_SIZE
+                y2 = y1 + CELL_SIZE
+                self.selection_outline = self.canvas.create_rectangle(x1, y1, x2, y2, outline="lime", width=3)
         else:
             if self.is_valid_move(row, col):
                 self.move_piece(row, col)
@@ -74,7 +83,6 @@ class ThaiCheckersApp:
             self.selected_piece_position = None
 
     def is_current_turn_piece(self, piece):
-        """Check if the piece belongs to the current player, including kings."""
         piece_color = self.canvas.itemcget(piece, "fill")
         if self.current_turn == "red" and piece_color in ["red", "darkred"]:
             return True
@@ -132,7 +140,6 @@ class ThaiCheckersApp:
                              (target_row - self.selected_piece_position[0]) * CELL_SIZE)
 
     def check_for_king(self, row, col):
-        """Check if the piece reaches the last row and becomes a king."""
         piece = self.get_piece_position(row, col)
         if self.current_turn == "red" and row == 7:
             self.canvas.itemconfig(piece, fill="darkred")
@@ -146,4 +153,4 @@ class ThaiCheckersApp:
 if __name__ == "__main__":
     root = tk.Tk()
     app = ThaiCheckersApp(root)
-    root.mainloop() 
+    root.mainloop()
